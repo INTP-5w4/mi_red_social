@@ -1,0 +1,379 @@
+/* =========================================================
+   Hoja de estilos global — Red Social
+   Inspirada en el Instagram de ~2010: blanco, limpio, con
+   bordes finos en vez de sombras, tipografía sencilla y
+   una sola columna de feed centrada.
+   ========================================================= */
+
+:root {
+    --color-fondo:        #fafafa;
+    --color-tarjeta:      #ffffff;
+    --color-borde:        #dbdbdb;
+    --color-texto:        #262626;
+    --color-texto-suave:  #8e8e8e;
+    --color-acento:       #3897f0;
+    --color-acento-hover: #2f7fd1;
+    --color-like:         #ed4956;
+    --color-error:        #ed4956;
+    --color-exito:        #3897f0;
+
+    --radio:  3px;
+    --ancho-feed: 470px;
+}
+
+* {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    padding: 0;
+    background: var(--color-fondo);
+    color: var(--color-texto);
+    font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+    font-size: 14px;
+    line-height: 1.4;
+}
+
+a {
+    color: inherit;
+    text-decoration: none;
+}
+
+/* ---------- Botones y campos base ---------- */
+
+button,
+input[type="submit"],
+input[type="button"] {
+    font-family: inherit;
+    font-size: 14px;
+    cursor: pointer;
+    border: none;
+    background: none;
+    color: var(--color-texto);
+}
+
+input[type="text"],
+input[type="email"],
+input[type="password"],
+input[type="file"] {
+    font-family: inherit;
+    font-size: 14px;
+    border: 1px solid var(--color-borde);
+    border-radius: var(--radio);
+    padding: 8px 10px;
+    width: 100%;
+}
+
+input:focus,
+button:focus {
+    outline: 2px solid var(--color-acento);
+    outline-offset: 1px;
+}
+
+label {
+    display: block;
+    font-size: 12px;
+    color: var(--color-texto-suave);
+    margin: 10px 0 4px;
+}
+
+/* ---------- Header ---------- */
+
+.header {
+    background: var(--color-tarjeta);
+    border-bottom: 1px solid var(--color-borde);
+    padding: 10px 16px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+}
+
+.header .acciones {
+    display: flex;
+    gap: 8px;
+    width: 100%;
+    max-width: var(--ancho-feed);
+    justify-content: flex-end;
+}
+
+.header .acciones button {
+    padding: 6px 14px;
+    border-radius: var(--radio);
+    background: var(--color-acento);
+    color: #ffffff;
+    font-weight: 600;
+}
+
+.header .acciones button:hover {
+    background: var(--color-acento-hover);
+}
+
+.header .publicar {
+    width: 100%;
+    max-width: var(--ancho-feed);
+    border-top: 1px solid var(--color-borde);
+    padding-top: 8px;
+}
+
+.header .publicar form {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+}
+
+.header .publicar label {
+    margin: 0;
+}
+
+.header .publicar button {
+    padding: 6px 14px;
+    border-radius: var(--radio);
+    background: var(--color-acento);
+    color: #ffffff;
+    font-weight: 600;
+}
+
+/* ---------- Contenido / feed ---------- */
+
+.contenido {
+    max-width: var(--ancho-feed);
+    margin: 24px auto;
+    padding: 0 12px;
+}
+
+.sin-publicaciones {
+    text-align: center;
+    color: var(--color-texto-suave);
+    margin-top: 60px;
+}
+
+/* ---------- Tarjeta de publicación ---------- */
+
+.post {
+    background: var(--color-tarjeta);
+    border: 1px solid var(--color-borde);
+    border-radius: var(--radio);
+    margin-bottom: 20px;
+}
+
+.post_header {
+    padding: 10px 12px;
+    border-bottom: 1px solid var(--color-borde);
+}
+
+.post_usuario {
+    font-weight: 600;
+}
+
+.post .img {
+    width: 100%;
+    line-height: 0;
+    background: #efefef;
+}
+
+.post .img img {
+    width: 100%;
+    height: auto;
+    display: block;
+}
+
+.post_acciones {
+    display: flex;
+    gap: 4px;
+    padding: 8px 8px 0;
+}
+
+.post_acciones .form_accion {
+    display: inline-flex;
+}
+
+.btn_like,
+.btn_guardar {
+    font-size: 22px;
+    padding: 4px 8px;
+    line-height: 1;
+}
+
+.btn_like.activo {
+    color: var(--color-like);
+}
+
+.btn_guardar.activo {
+    color: var(--color-texto);
+}
+
+.post_likes {
+    padding: 4px 12px 0;
+    font-weight: 600;
+}
+
+.post_descripcion {
+    padding: 6px 12px 0;
+}
+
+.post_descripcion .post_usuario {
+    margin-right: 6px;
+}
+
+.post_comentarios {
+    padding: 6px 12px 0;
+}
+
+.comentario {
+    margin-bottom: 2px;
+}
+
+.comentario .post_usuario {
+    margin-right: 6px;
+}
+
+.form_comentario {
+    display: flex;
+    gap: 8px;
+    border-top: 1px solid var(--color-borde);
+    padding: 8px 12px;
+    margin-top: 8px;
+}
+
+.form_comentario input[type="text"] {
+    border: none;
+    padding: 4px 0;
+}
+
+.form_comentario input[type="text"]:focus {
+    outline: none;
+}
+
+.form_comentario button {
+    color: var(--color-acento);
+    font-weight: 600;
+}
+
+.form_comentario button:hover {
+    color: var(--color-acento-hover);
+}
+
+/* ---------- Footer ---------- */
+
+.footer {
+    max-width: var(--ancho-feed);
+    margin: 24px auto 40px;
+    padding: 12px;
+    text-align: center;
+    color: var(--color-texto-suave);
+    font-size: 12px;
+}
+
+/* ---------- Login / registro ---------- */
+
+.pagina-login {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    padding: 20px;
+}
+
+.form,
+.modal_registro {
+    background: var(--color-tarjeta);
+    border: 1px solid var(--color-borde);
+    border-radius: var(--radio);
+    padding: 24px;
+    width: 100%;
+    max-width: 340px;
+}
+
+.form input[type="submit"],
+.modal_registro input[type="submit"] {
+    margin-top: 16px;
+    width: 100%;
+    background: var(--color-acento);
+    color: #ffffff;
+    font-weight: 600;
+    padding: 8px;
+    border-radius: var(--radio);
+}
+
+.form input[type="submit"]:hover,
+.modal_registro input[type="submit"]:hover {
+    background: var(--color-acento-hover);
+}
+
+.registro {
+    text-align: center;
+    margin-top: 16px;
+    color: var(--color-texto-suave);
+}
+
+.registro button {
+    color: var(--color-acento);
+    font-weight: 600;
+}
+
+.modal_registro {
+    display: none;
+    margin-top: 16px;
+}
+
+.modal_registro.activo {
+    display: block;
+}
+
+/* ---------- Alertas ---------- */
+
+.alerta {
+    max-width: var(--ancho-feed);
+    margin: 12px auto;
+    padding: 10px 14px;
+    border-radius: var(--radio);
+    font-size: 13px;
+}
+
+.alerta-error {
+    background: #fdecee;
+    color: var(--color-error);
+    border: 1px solid #f7c6cb;
+}
+
+.alerta-exito {
+    background: #eaf4fd;
+    color: var(--color-exito);
+    border: 1px solid #c6e0f7;
+}
+
+.alerta p {
+    margin: 2px 0;
+}
+
+/* ---------- Responsive ---------- */
+
+@media (max-width: 500px) {
+    .contenido,
+    .footer,
+    .alerta {
+        padding-left: 0;
+        padding-right: 0;
+    }
+
+    .form,
+    .modal_registro {
+        max-width: 100%;
+    }
+}
+
+/* ---------- Accesibilidad: respeta preferencia de menos movimiento ---------- */
+
+@media (prefers-reduced-motion: reduce) {
+    * {
+        transition: none !important;
+        animation: none !important;
+    }
+}
