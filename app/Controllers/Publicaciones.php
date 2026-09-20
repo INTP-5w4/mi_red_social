@@ -6,6 +6,7 @@ use App\Models\PublicacionModel;
 use App\Models\LikeModel;
 use App\Models\LogLikeModel;
 use App\Models\GuardadoModel;
+use App\Models\LogGuardadoModel;
 use App\Models\ComentarioModel;
 use Config\Services;
 
@@ -69,16 +70,17 @@ class Publicaciones extends BaseController
             $logLikeModel->registrar($idUsuario, $idPublicacion, 'Like');
         }
 
-        return redirect()->to('/');
+        return redirect()->back();
     }
 
     /**
-     * Guarda o quita una publicación de guardados (toggle).
+     * Guarda o quita una publicación de guardados (toggle) y deja registro en el log.
      */
     public function guardar(int $idPublicacion)
     {
-        $idUsuario     = (int) session()->get('id_usuario');
-        $guardadoModel = new GuardadoModel();
+        $idUsuario        = (int) session()->get('id_usuario');
+        $guardadoModel    = new GuardadoModel();
+        $logGuardadoModel = new LogGuardadoModel();
 
         $existente = $guardadoModel
             ->where('id_usuario', $idUsuario)
@@ -87,14 +89,16 @@ class Publicaciones extends BaseController
 
         if ($existente) {
             $guardadoModel->delete($existente['id']);
+            $logGuardadoModel->registrar($idUsuario, $idPublicacion, 'Quitar');
         } else {
             $guardadoModel->insert([
                 'id_usuario'     => $idUsuario,
                 'id_publicacion' => $idPublicacion,
             ]);
+            $logGuardadoModel->registrar($idUsuario, $idPublicacion, 'Guardar');
         }
 
-        return redirect()->to('/');
+        return redirect()->back();
     }
 
     /**
@@ -122,5 +126,23 @@ class Publicaciones extends BaseController
         ]);
 
         return redirect()->to('/');
+    }
+
+    /**
+     * Elimina un comentario propio (solo si pertenece al usuario en sesión).
+     */
+    public function eliminarComentario(int $idComentario)
+    {
+        $idUsuario       = (int) session()->get('id_usuario');
+        $comentarioModel = new ComentarioModel();
+
+        $comentario = $comentarioModel->find($idComentario);
+
+        // Solo el dueño del comentario puede eliminarlo
+        if ($comentario && (int) $comentario['id_usuario'] === $idUsuario) {
+            $comentarioModel->delete($idComentario);
+        }
+
+        return redirect()->back();
     }
 }

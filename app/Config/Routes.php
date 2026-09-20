@@ -20,3 +20,15 @@ $routes->group('publicaciones', ['filter' => 'auth'], function ($routes) {
     $routes->post('(:num)/guardar', 'Publicaciones::guardar/$1');
     $routes->post('(:num)/comentar', 'Publicaciones::comentar/$1');
 });
+
+// Eliminar comentarios propios (protegida: requiere sesión activa)
+$routes->group('comentarios', ['filter' => 'auth'], function ($routes) {
+    $routes->post('(:num)/eliminar', 'Publicaciones::eliminarComentario/$1');
+});
+
+// Logs de actividad del usuario en sesión (protegidas: requieren sesión activa)
+$routes->group('logs', ['filter' => 'auth'], function ($routes) {
+    $routes->get('likes', 'Logs::likes');
+    $routes->get('guardados', 'Logs::guardados');
+    $routes->get('acciones', 'Logs::acciones');
+});

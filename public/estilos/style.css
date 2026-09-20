@@ -377,3 +377,120 @@ label {
         animation: none !important;
     }
 }
+
+.titulo_log {
+    max-width: var(--ancho-feed);
+    margin: 24px auto 12px;
+    padding: 0 12px;
+    font-size: 18px;
+}
+
+.tabla_logs {
+    width: 100%;
+    max-width: var(--ancho-feed);
+    margin: 0 auto;
+    border-collapse: collapse;
+    background: var(--color-tarjeta);
+    border: 1px solid var(--color-borde);
+    border-radius: var(--radio);
+    overflow: hidden;
+}
+
+.tabla_logs th,
+.tabla_logs td {
+    padding: 8px 12px;
+    border-bottom: 1px solid var(--color-borde);
+    text-align: left;
+    font-size: 13px;
+}
+
+.tabla_logs th {
+    color: var(--color-texto-suave);
+    font-weight: 600;
+}
+
+.tabla_logs tr:last-child td {
+    border-bottom: none;
+}
+
+.miniatura_log {
+    width: 48px;
+    height: 48px;
+    object-fit: cover;
+    border-radius: var(--radio);
+    display: block;
+}
+
+.accion_positiva {
+    color: var(--color-acento);
+    font-weight: 600;
+}
+
+.accion_negativa {
+    color: var(--color-like);
+    font-weight: 600;
+}
+
+.paginador {
+    max-width: var(--ancho-feed);
+    margin: 12px auto 40px;
+    padding: 0 12px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 12px;
+    font-size: 13px;
+    color: var(--color-texto-suave);
+}
+
+.paginador a {
+    color: var(--color-acento);
+    font-weight: 600;
+}
+
+.nav_logs {
+    display: flex;
+    gap: 12px;
+    width: 100%;
+    max-width: var(--ancho-feed);
+    justify-content: center;
+    font-size: 13px;
+    padding-top: 4px;
+}
+
+.nav_logs a {
+    color: var(--color-texto-suave);
+    font-weight: 600;
+}
+
+.nav_logs a:hover {
+    color: var(--color-acento);
+}
+/* ---------- Modal de publicar (oculto hasta hacer clic en "Publicar") ---------- */
+
+.header .publicar {
+    display: none;
+}
+
+.header .publicar.activo {
+    display: block;
+}
+/* ---------- Botón "Quitar" en las tablas de logs ---------- */
+
+.form_accion_log {
+    display: inline-block;
+}
+
+.btn_quitar_log {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--color-like);
+    padding: 4px 8px;
+    border: 1px solid var(--color-like);
+    border-radius: var(--radio);
+}
+
+.btn_quitar_log:hover {
+    background: var(--color-like);
+    color: #ffffff;
+}
