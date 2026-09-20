@@ -10,20 +10,18 @@ class AuthFilter implements FilterInterface
 {
     /**
      * Se ejecuta antes de llegar al controlador.
-     * Si no hay sesión activa (logueado), redirige al login.
+     * Si no hay una sesión activa, redirige al login.
      */
     public function before(RequestInterface $request, $arguments = null)
     {
         if (! session()->get('logueado')) {
-            return redirect()->to('/login');
+            return redirect()->to('/login')
+                ->with('errors', ['auth' => 'Debes iniciar sesión para continuar.']);
         }
     }
 
-    /**
-     * Se ejecuta después del controlador. No se necesita hacer nada aquí.
-     */
     public function after(RequestInterface $request, ResponseInterface $response, $arguments = null)
     {
-        // Sin acciones posteriores necesarias.
+        // No se requiere ninguna acción posterior
     }
 }
