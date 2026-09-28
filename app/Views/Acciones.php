@@ -4,6 +4,18 @@
 
 <h1 class="titulo_log">Mi actividad</h1>
 
+<?php if (session()->getFlashdata('exito')): ?>
+    <div class="alerta alerta-exito"><?= esc(session()->getFlashdata('exito')) ?></div>
+<?php endif; ?>
+
+<?php if (session()->getFlashdata('errors')): ?>
+    <div class="alerta alerta-error">
+        <?php foreach (session()->getFlashdata('errors') as $error): ?>
+            <p><?= esc($error) ?></p>
+        <?php endforeach; ?>
+    </div>
+<?php endif; ?>
+
 <?php if (empty($registros)): ?>
     <p class="sin-publicaciones">Aún no tienes actividad registrada.</p>
 <?php else: ?>
@@ -21,13 +33,13 @@
             <?php foreach ($registros as $registro): ?>
                 <?php
                     if ($registro['origen'] === 'like') {
-                        $accionUrl    = 'publicaciones/' . $registro['id_publicacion'] . '/like';
+                        $accionUrl    = 'logs/quitar/like/' . $registro['id_publicacion'];
                         $etiquetaTipo = 'Like';
                     } elseif ($registro['origen'] === 'guardado') {
-                        $accionUrl    = 'publicaciones/' . $registro['id_publicacion'] . '/guardar';
+                        $accionUrl    = 'logs/quitar/guardado/' . $registro['id_publicacion'];
                         $etiquetaTipo = 'Guardado';
                     } else {
-                        $accionUrl    = 'comentarios/' . $registro['id'] . '/eliminar';
+                        $accionUrl    = 'logs/quitar/comentario/' . $registro['id'];
                         $etiquetaTipo = 'Comentario';
                     }
                 ?>
@@ -47,9 +59,10 @@
                     </td>
                     <td><?= esc($registro['fecha']) ?></td>
                     <td>
-                        <?php if ($registro['activo']): ?>
+                        <?php if ($registro['es_tope']): ?>
                             <form action="<?= base_url($accionUrl) ?>" method="post" class="form_accion_log">
                                 <?= csrf_field() ?>
+                                <input type="hidden" name="contexto" value="acciones">
                                 <button type="submit" class="btn_quitar_log">Quitar</button>
                             </form>
                         <?php else: ?>

@@ -12,11 +12,24 @@ use App\Models\PublicacionModel;
 class Logs extends BaseController
 {
     /**
+     * Páginas desde las que se puede quitar algo => ruta a la que se regresa.
+     * Se usa como lista blanca del campo "contexto" que manda el formulario.
+     */
+    private const CONTEXTOS = [
+        'likes'     => '/logs/likes',
+        'guardados' => '/logs/guardados',
+        'acciones'  => '/logs/acciones',
+    ];
+
+    /**
      * Historial de likes/unlikes del usuario en sesión. Paginado de 10 en 10.
+     * Solo la fila "tope" de la pila (el último like que sigue activo) muestra el botón Quitar.
      */
     public function likes(): string
     {
         $idUsuario = (int) session()->get('id_usuario');
+        $topes     = $this->calcularTopes($idUsuario);
+        $idTope    = $topes['like'] !== null ? (int) $topes['like']['id'] : null;
 
         $logLikeModel = new LogLikeModel();
 
@@ -27,15 +40,8 @@ class Logs extends BaseController
             ->orderBy('log_likes.fecha', 'DESC')
             ->paginate(10, 'likes');
 
-        // Publicaciones que el usuario tiene actualmente likeadas, para saber
-        // en qué filas mostrar el botón de "Quitar".
-        $idsActivos = array_map('intval', array_column(
-            (new LikeModel())->where('id_usuario', $idUsuario)->findAll(),
-            'id_publicacion'
-        ));
-
         foreach ($registros as &$registro) {
-            $registro['activo'] = in_array((int) $registro['id_publicacion'], $idsActivos, true);
+            $registro['es_tope'] = $idTope !== null && (int) $registro['id'] === $idTope;
         }
         unset($registro);
 
@@ -47,10 +53,13 @@ class Logs extends BaseController
 
     /**
      * Historial de guardados/quitados del usuario en sesión. Paginado de 10 en 10.
+     * Solo la fila "tope" de la pila (el último guardado que sigue activo) muestra el botón Quitar.
      */
     public function guardados(): string
     {
         $idUsuario = (int) session()->get('id_usuario');
+        $topes     = $this->calcularTopes($idUsuario);
+        $idTope    = $topes['guardado'] !== null ? (int) $topes['guardado']['id'] : null;
 
         $logGuardadoModel = new LogGuardadoModel();
 
@@ -61,15 +70,8 @@ class Logs extends BaseController
             ->orderBy('log_guardados.fecha', 'DESC')
             ->paginate(10, 'guardados');
 
-        // Publicaciones que el usuario tiene actualmente guardadas, para saber
-        // en qué filas mostrar el botón de "Quitar".
-        $idsActivos = array_map('intval', array_column(
-            (new GuardadoModel())->where('id_usuario', $idUsuario)->findAll(),
-            'id_publicacion'
-        ));
-
         foreach ($registros as &$registro) {
-            $registro['activo'] = in_array((int) $registro['id_publicacion'], $idsActivos, true);
+            $registro['es_tope'] = $idTope !== null && (int) $registro['id'] === $idTope;
         }
         unset($registro);
 
@@ -80,17 +82,22 @@ class Logs extends BaseController
     }
 
     /**
-     * Historial combinado (likes + guardados) del usuario en sesión, ordenado
-     * cronológicamente. Paginado de 20 en 20.
+     * Historial combinado (likes + guardados + comentarios) del usuario en sesión,
+     * ordenado cronológicamente. Paginado de 20 en 20.
      *
-     * Al venir de dos tablas distintas no se puede usar el paginate() nativo
-     * de un solo modelo, así que aquí traemos ambos historiales completos
+     * Al venir de tablas distintas no se puede usar el paginate() nativo
+     * de un solo modelo, así que aquí traemos los historiales completos
      * del usuario, los unimos, ordenamos por fecha y paginamos a mano.
+     *
+     * Solo la fila "tope" general (la última acción activa entre likes, guardados
+     * y comentarios) muestra el botón Quitar.
      */
     public function acciones(): string
     {
         $idUsuario = (int) session()->get('id_usuario');
         $porPagina = 20;
+        $topes     = $this->calcularTopes($idUsuario);
+        $tope      = $topes['general'];
 
         $paginaActual = (int) ($this->request->getGet('pagina') ?? 1);
         if ($paginaActual < 1) {
@@ -148,28 +155,13 @@ class Logs extends BaseController
             $publicaciones = array_column($publicaciones, null, 'id');
         }
 
-        // Estado actual de likes/guardados, para saber en qué filas mostrar
-        // el botón de "Quitar".
-        $likesActivos = array_map('intval', array_column(
-            (new LikeModel())->where('id_usuario', $idUsuario)->findAll(),
-            'id_publicacion'
-        ));
-        $guardadosActivos = array_map('intval', array_column(
-            (new GuardadoModel())->where('id_usuario', $idUsuario)->findAll(),
-            'id_publicacion'
-        ));
-
         foreach ($registrosPagina as &$registro) {
             $registro['publicacion'] = $publicaciones[$registro['id_publicacion']] ?? null;
 
-            if ($registro['origen'] === 'like') {
-                $registro['activo'] = in_array((int) $registro['id_publicacion'], $likesActivos, true);
-            } elseif ($registro['origen'] === 'guardado') {
-                $registro['activo'] = in_array((int) $registro['id_publicacion'], $guardadosActivos, true);
-            } else {
-                // Un comentario siempre se puede quitar mientras exista
-                $registro['activo'] = true;
-            }
+            // Los ids se repiten entre tablas, por eso se compara origen + id
+            $registro['es_tope'] = $tope !== null
+                && $registro['origen'] === $tope['origen']
+                && (int) $registro['id'] === $tope['id'];
         }
         unset($registro);
 
@@ -178,5 +170,176 @@ class Logs extends BaseController
             'paginaActual' => $paginaActual,
             'totalPaginas' => $totalPaginas,
         ]);
+    }
+
+    /**
+     * Quita (pop) la última inserción activa de una pila.
+     *
+     * $tipo: like | guardado | comentario
+     * $id:   id de la publicación (like/guardado) o id del comentario.
+     * El formulario manda además "contexto" (likes | guardados | acciones)
+     * para saber contra qué pila se valida.
+     */
+    public function quitar(string $tipo, int $id)
+    {
+        $idUsuario = (int) session()->get('id_usuario');
+        $contexto  = (string) $this->request->getPost('contexto');
+
+        if (! isset(self::CONTEXTOS[$contexto])) {
+            return redirect()->to('/logs/acciones')
+                ->with('errors', ['pila' => 'Origen no válido.']);
+        }
+
+        $vuelta = self::CONTEXTOS[$contexto];
+
+        // La validación real está aquí: ocultar el botón en la vista no basta,
+        // porque alguien podría mandar el POST a mano con otro id.
+        $topes = $this->calcularTopes($idUsuario);
+
+        if (! $this->esTope($contexto, $tipo, $id, $topes)) {
+            return redirect()->to($vuelta)
+                ->with('errors', ['pila' => 'Solo se puede quitar la última acción registrada.']);
+        }
+
+        $db = \Config\Database::connect();
+        $db->transStart();
+
+        if ($tipo === 'like') {
+            $likeModel = new LikeModel();
+            $existente = $likeModel
+                ->where('id_usuario', $idUsuario)
+                ->where('id_publicacion', $id)
+                ->first();
+
+            if ($existente) {
+                $likeModel->delete($existente['id']);
+                (new LogLikeModel())->registrar($idUsuario, $id, 'Unlike');
+            }
+        } elseif ($tipo === 'guardado') {
+            $guardadoModel = new GuardadoModel();
+            $existente     = $guardadoModel
+                ->where('id_usuario', $idUsuario)
+                ->where('id_publicacion', $id)
+                ->first();
+
+            if ($existente) {
+                $guardadoModel->delete($existente['id']);
+                (new LogGuardadoModel())->registrar($idUsuario, $id, 'Quitar');
+            }
+        } elseif ($tipo === 'comentario') {
+            $comentarioModel = new ComentarioModel();
+            $comentario      = $comentarioModel->find($id);
+
+            // Solo el dueño del comentario puede eliminarlo
+            if ($comentario && (int) $comentario['id_usuario'] === $idUsuario) {
+                $comentarioModel->delete($id);
+            }
+        }
+
+        $db->transComplete();
+
+        return redirect()->to($vuelta)->with('exito', 'Se quitó la última acción.');
+    }
+
+    /**
+     * Indica si (tipo, id) es el tope de la pila del contexto indicado.
+     */
+    private function esTope(string $contexto, string $tipo, int $id, array $topes): bool
+    {
+        if ($contexto === 'acciones') {
+            $general = $topes['general'];
+
+            return $general !== null
+                && $general['origen'] === $tipo
+                && $general['referencia'] === $id;
+        }
+
+        if ($contexto === 'likes' && $tipo === 'like') {
+            return $topes['like'] !== null
+                && (int) $topes['like']['id_publicacion'] === $id;
+        }
+
+        if ($contexto === 'guardados' && $tipo === 'guardado') {
+            return $topes['guardado'] !== null
+                && (int) $topes['guardado']['id_publicacion'] === $id;
+        }
+
+        return false;
+    }
+
+    private function calcularTopes(int $idUsuario): array
+    {
+        $idsLikesActivos = array_map('intval', array_column(
+            (new LikeModel())->where('id_usuario', $idUsuario)->findAll(),
+            'id_publicacion'
+        ));
+
+        $idsGuardadosActivos = array_map('intval', array_column(
+            (new GuardadoModel())->where('id_usuario', $idUsuario)->findAll(),
+            'id_publicacion'
+        ));
+
+        $topeLike = null;
+        if (! empty($idsLikesActivos)) {
+            $topeLike = (new LogLikeModel())
+                ->where('id_usuario', $idUsuario)
+                ->where('tipo_accion', 'Like')
+                ->whereIn('id_publicacion', $idsLikesActivos)
+                ->orderBy('id', 'DESC')
+                ->first();
+        }
+
+        $topeGuardado = null;
+        if (! empty($idsGuardadosActivos)) {
+            $topeGuardado = (new LogGuardadoModel())
+                ->where('id_usuario', $idUsuario)
+                ->where('tipo_accion', 'Guardar')
+                ->whereIn('id_publicacion', $idsGuardadosActivos)
+                ->orderBy('id', 'DESC')
+                ->first();
+        }
+
+        $topeComentario = (new ComentarioModel())
+            ->where('id_usuario', $idUsuario)
+            ->orderBy('id', 'DESC')
+            ->first();
+
+        $candidatos = [];
+
+        if ($topeLike !== null) {
+            $candidatos[] = [
+                'origen'     => 'like',
+                'id'         => (int) $topeLike['id'],
+                'referencia' => (int) $topeLike['id_publicacion'],
+                'fecha'      => $topeLike['fecha'],
+            ];
+        }
+
+        if ($topeGuardado !== null) {
+            $candidatos[] = [
+                'origen'     => 'guardado',
+                'id'         => (int) $topeGuardado['id'],
+                'referencia' => (int) $topeGuardado['id_publicacion'],
+                'fecha'      => $topeGuardado['fecha'],
+            ];
+        }
+
+        if ($topeComentario !== null) {
+            $candidatos[] = [
+                'origen'     => 'comentario',
+                'id'         => (int) $topeComentario['id'],
+                'referencia' => (int) $topeComentario['id'],
+                'fecha'      => $topeComentario['created_at'],
+            ];
+        }
+
+        usort($candidatos, static fn ($a, $b) => strtotime($b['fecha']) <=> strtotime($a['fecha']));
+
+        return [
+            'like'       => $topeLike,
+            'guardado'   => $topeGuardado,
+            'comentario' => $topeComentario,
+            'general'    => $candidatos[0] ?? null,
+        ];
     }
 }

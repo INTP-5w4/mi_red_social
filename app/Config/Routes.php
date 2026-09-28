@@ -13,7 +13,7 @@ $routes->post('/login', 'Auth::procesarLogin');
 $routes->post('/registro', 'Auth::registro');
 $routes->get('/logout', 'Auth::logout');
 
-// Acciones sobre publicaciones (protegidas: requieren sesión activa)
+// Acciones sobre publicaciones
 $routes->group('publicaciones', ['filter' => 'auth'], function ($routes) {
     $routes->post('crear', 'Publicaciones::crear');
     $routes->post('(:num)/like', 'Publicaciones::like/$1');
@@ -21,14 +21,12 @@ $routes->group('publicaciones', ['filter' => 'auth'], function ($routes) {
     $routes->post('(:num)/comentar', 'Publicaciones::comentar/$1');
 });
 
-// Eliminar comentarios propios (protegida: requiere sesión activa)
-$routes->group('comentarios', ['filter' => 'auth'], function ($routes) {
-    $routes->post('(:num)/eliminar', 'Publicaciones::eliminarComentario/$1');
-});
-
-// Logs de actividad del usuario en sesión (protegidas: requieren sesión activa)
+// Logs de actividad del usuario en sesión
 $routes->group('logs', ['filter' => 'auth'], function ($routes) {
     $routes->get('likes', 'Logs::likes');
     $routes->get('guardados', 'Logs::guardados');
     $routes->get('acciones', 'Logs::acciones');
+
+    // Quitar la última inserción (pila LIFO): tipo = like | guardado | comentario
+    $routes->post('quitar/(:segment)/(:num)', 'Logs::quitar/$1/$2');
 });
